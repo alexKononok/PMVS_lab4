@@ -191,3 +191,67 @@ static int fst_truncate (const char * z, off_t v)
 {
 	return 0;
 }
+
+static struct fuse_operations fuse_example_operations = 
+{
+	.getattr = getattr_callback,
+	.mknod = fst_mknod,
+	.open = open_callback,
+	.read = read_callback,
+	.readdir = readdir_callback,
+	.utimens = fst_utimens,
+	.setxattr = fst_setxattr,
+	.getxattr = fst_getxattr,
+	.listxattr = fst_listxattr,
+	.write = fst_write,
+	.truncate = fst_truncate,
+	.unlink = fst_unlink
+};
+
+int main(int argc, char *argv[])
+{
+	FILE *file_in = fopen(BUF_FILE, "rb");
+	fseek(file_in, 0, SEEK_SET);
+	file_count = 0;
+	fread(&file_count, sizeof(int), 1, file_in);
+	if (file_count != 0) {
+		file_offset_end = (int*)malloc(file_count*sizeof(int));
+		file_name = (char**)malloc(file_count*sizeof(char*));
+		file_size = (int*)malloc(file_count*sizeof(int));
+		int i = 0;
+		for (i = 0; i< file_count; i++) {
+			file_name[i] = (char*)malloc(NAME_LENGTH*sizeof(char));
+		}
+		for (i = 0; i < file_count; i++) {
+			struct file_info info;
+			memset(info.file_name, 0, NAME_LENGTH);
+			fread(&info, sizeof(struct file_info), 1, file_in);
+			file_size[i] = info.file_size;
+			file_offset_end[i] = info.file_offset;
+			memset(file_name[i], 0, NAME_LENGTH);
+			strcpy(file_name[i], info.file_name);
+		}
+	}
+	fclose(file_in);
+	int x = fuse_main(argc, argv, &fuse_example_operations, NULL);
+	file_in = fopen(BUF_FILE, "rb+");
+	fseek(file_in, 0, SEEK_SET);
+	fwrite(&file_count, sizeof(int), 1, file_in);
+	int i = 0;
+	for (i = 0; i < file_count; i++) {
+		struct file_info info;
+		memset(info.file_name, 0, NAME_LENGTH);
+		strcpy(info.file_name, file_name[i]);
+		info.file_size = file_size[i];
+		info.file_offset = file_offset_end[i];
+		fwrite(&info, sizeof(struct file_info), 1, file_in);
+	}
+	for (i = 0; i < file_count-2; i++) {
+		free(file_name[i]);
+	}
+	free(file_name);
+	free(file_offset_end);
+	free(file_size);
+	fclose(file_in);
+	return x;
+}
