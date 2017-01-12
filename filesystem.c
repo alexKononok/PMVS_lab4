@@ -62,3 +62,38 @@ static int open_callback(const char *path, struct fuse_file_info *fi)
 		return -ENOENT;
 	return 0;
 }
+
+static int read_callback(const char *path, char *buf, size_t size, off_t offset, struct fuse_file_info *fi) 
+{
+	(void) fi;
+	int index = path_index(path);
+	FILE *file_in = fopen(STORE_FILE, "rb");
+	int start = index == 0 ? 0 : file_offset_end[index-1];
+	fseek(file_in, start + offset, SEEK_SET);
+	fread(buf, size, 1, file_in);
+	printf("%d\n",file_offset_end[index]-start);
+	printf("%s\n", buf);
+	fclose(file_in);
+	return size;
+}
+
+static int fst_utimens (const char *v, const struct timespec tv[2])
+{
+	return 0;
+}
+
+static int fst_getxattr (const char *x, const char *y, char *z, size_t f)
+{
+	return 0;
+}
+
+static int fst_setxattr (const char *x, const char *y, const char *z, size_t l, int f)
+{
+	return 0;
+}
+
+static int fst_listxattr (const char *x, char *y, size_t z)
+{
+	return 0;
+}
+
