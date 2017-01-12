@@ -54,3 +54,11 @@ static int getattr_callback(const char *path, struct stat *stbuf)
 	}
 	return -ENOENT;
 }
+
+static int open_callback(const char *path, struct fuse_file_info *fi) 
+{
+  	int index = path_index(path);
+	if (index == -1)
+		return -ENOENT;
+	return 0;
+}
